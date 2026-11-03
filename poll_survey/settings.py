@@ -39,9 +39,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'pollapi',
     'rest_framework',
-    'django_filters',
-    'drf_spectacular',
-    'rest_framework.authtoken'
+    'django_filters',  # lets users filter polls by status
+    'drf_spectacular',  # builds the Swagger page
+    'rest_framework.authtoken'  # needed for the login token URL
 ]
 
 MIDDLEWARE = [
@@ -132,11 +132,12 @@ MAILERS = {
 }
 
 REST_FRAMEWORK = {
+    # A user must be logged in before they can use the API.
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.TokenAuthentication',  # login with Authorization: Token <key>
         'rest_framework.authentication.SessionAuthentication',
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',

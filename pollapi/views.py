@@ -14,8 +14,8 @@ from .serializers import PollSerializer
 
 class PollPagination(PageNumberPagination):
     page_size = 10
-    page_size_query_param = 'page_size'
-    max_page_size = 100
+    page_size_query_param = 'page_size'  # user can ask for more items with ?page_size=
+    max_page_size = 100  # never return more than 100 items on one page
 
 
 class PollViewSet(viewsets.ModelViewSet):
@@ -23,12 +23,14 @@ class PollViewSet(viewsets.ModelViewSet):
     serializer_class = PollSerializer
     permission_classes = [IsAuthenticated, IsPollCreator]
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['status']
+    filterset_fields = ['status']  # example: /api/polls/?status=open
     pagination_class = PollPagination
 
     def get_queryset(self):
         votes = Vote.objects.all()
         user = getattr(self.request, 'user', None)
+        
+        # Load only this person's vote, so we can show which choice they picked.
         if user and user.is_authenticated:
             votes = votes.filter(voter=user)
         return super().get_queryset().prefetch_related(
@@ -37,6 +39,7 @@ class PollViewSet(viewsets.ModelViewSet):
         )
 
     def perform_create(self, serializer):
+        # The person who is logged in is saved as the creator.
         serializer.save(creator=self.request.user)
 
     @action(detail=True, methods=['post'], url_path='vote')
@@ -64,8 +67,10 @@ class PollViewSet(viewsets.ModelViewSet):
         try:
             with transaction.atomic():
                 Vote.objects.create(poll=poll, option=option, voter=request.user)
+                # Add 1 to the choice's vote count inside the database.
                 Option.objects.filter(pk=option.pk).update(votes=F('votes') + 1)
         except IntegrityError:
+            # This happens if the same person sends two votes at the same time.
             return Response(
                 {'detail': 'You have already voted for this poll'},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -88,7 +93,7 @@ class PollViewSet(viewsets.ModelViewSet):
             return Response({'detail': 'Poll is already closed'}, status=status.HTTP_400_BAD_REQUEST)
 
         poll.status = 'closed'
-        poll.save(update_fields=['status', 'updated_at'])
+        poll.save(update_fields=['status', 'updated_at'])  # only change the status and the update time
         return Response(self.get_serializer(poll).data)
 
     @action(detail=True, methods=['get'], url_path='results')
@@ -99,6 +104,7 @@ class PollViewSet(viewsets.ModelViewSet):
 
         results_data = []
         for opt in options:
+            # Turn the votes into a percentage, such as 50.0 for half the votes.
             percentage = round((opt.votes / total_votes) * 100, 2) if total_votes else 0
             results_data.append({
                 'option_id': opt.id,

@@ -3,6 +3,7 @@ from rest_framework.routers import DefaultRouter
 from .views import PollViewSet
 
 router = DefaultRouter()
+# Creates the poll URLs, including vote, close, and results.
 router.register(r'polls', PollViewSet, basename='poll')
 
 urlpatterns = [

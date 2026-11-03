@@ -8,10 +8,11 @@ class OptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Option
         fields = ['id', 'text', 'votes']
-        read_only_fields = ['votes']
+        read_only_fields = ['votes']  # the user cannot type in the vote count
 
 
 class PollSerializer(serializers.ModelSerializer):
+    # Shown in the response. On create, options can be ["Yes", "No"] or [{"text": "Yes"}].
     options = OptionSerializer(many=True, read_only=True)
     creator = serializers.ReadOnlyField(source='creator.username')
     my_vote = serializers.SerializerMethodField()
@@ -19,6 +20,7 @@ class PollSerializer(serializers.ModelSerializer):
     class Meta:
         model = Poll
         fields = ['id', 'question', 'status', 'options', 'creator', 'my_vote', 'created_at', 'updated_at']
+        # The user cannot set these. Closing a poll uses the close URL.
         read_only_fields = ['status', 'creator', 'created_at', 'updated_at']
 
     def get_my_vote(self, obj):
@@ -26,6 +28,7 @@ class PollSerializer(serializers.ModelSerializer):
         if not (request and request.user.is_authenticated):
             return None
 
+        # If the votes were already loaded, use them instead of asking the database again.
         prefetched = getattr(obj, '_prefetched_objects_cache', {}).get('votes')
         if prefetched is not None:
             for vote in prefetched:
@@ -37,6 +40,7 @@ class PollSerializer(serializers.ModelSerializer):
         return vote.option_id if vote else None
 
     def _option_texts(self):
+        # Read the options the user sent in the request body.
         options_data = self.initial_data.get('options', [])
         if not isinstance(options_data, list) or len(options_data) < 2:
             raise serializers.ValidationError({'options': ['Must provide at least 2']})
@@ -76,6 +80,7 @@ class PollSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError({'creator': ['Authentication required.']})
             creator = request.user
 
+        # Save the poll and its options together. If one option fails, the poll is not kept.
         with transaction.atomic():
             poll = Poll.objects.create(creator=creator, **validated_data)
             Option.objects.bulk_create([Option(poll=poll, text=text) for text in texts])
