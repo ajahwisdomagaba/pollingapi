@@ -37,7 +37,7 @@ source venv/bin/activate
 ```
 
 ```bash
-pip install django djangorestframework django-filter drf-spectacular
+pip install -r requirements.txt
 python manage.py migrate
 python manage.py createsuperuser
 python manage.py runserver
@@ -198,6 +198,7 @@ Request and error details for every route are in [API_CONTRACT.md](API_CONTRACT.
 ```text
 poll_survey/
 ├── manage.py
+├── requirements.txt
 ├── README.md
 ├── API_CONTRACT.md
 ├── .gitignore
