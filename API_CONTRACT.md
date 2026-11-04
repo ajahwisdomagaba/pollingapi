@@ -283,9 +283,11 @@ Same `400` question errors as `PUT` when `question` is present and invalid. Same
 
 Delete a poll and its options and votes. Only the creator can do this.
 
-### Success `204`
+### Success `200`
 
-Empty body.
+```json
+{"detail": "Poll deleted successfully", "poll_id": 1}
+```
 
 ### Errors
 
@@ -605,7 +607,11 @@ curl -X POST \
 curl -X DELETE -H "Authorization: Token a1b2c3d4e5f6" "http://localhost:8000/api/polls/1/"
 ```
 
-`204`: empty body.
+`200`:
+
+```json
+{"detail": "Poll deleted successfully", "poll_id": 1}
+```
 
 `403` (not the creator):
 

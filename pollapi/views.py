@@ -42,6 +42,16 @@ class PollViewSet(viewsets.ModelViewSet):
         # The person who is logged in is saved as the creator.
         serializer.save(creator=self.request.user)
 
+    def destroy(self, request, *args, **kwargs):
+        poll = self.get_object()
+        poll_id = poll.id
+        self.perform_destroy(poll)
+        # 200 is used because a 204 response is not allowed to include a message.
+        return Response(
+            {'detail': 'Poll deleted successfully', 'poll_id': poll_id},
+            status=status.HTTP_200_OK,
+        )
+
     @action(detail=True, methods=['post'], url_path='vote')
     def vote(self, request, pk=None):
         poll = self.get_object()
